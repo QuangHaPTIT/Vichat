@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +52,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final MailService mailService;
     private final RefreshTokenService refreshTokenService;
     private final OtpCodeRepository otpCodeRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     @NonFinal
     @Value("${jwt.valid-duration}")
     protected long VALID_DURATION;
@@ -90,20 +92,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user = userRepository.save(user);
         AuthResponse authResponse = generateAccessTokenAndRefreshToken(user);
         refreshTokenService.createOrUpdate(user, authResponse.getRefreshToken());
-        try{
-            Map<String, Object> props = new HashMap<>();
-            props.put("fullname", user.getFullName());
-            props.put("email", user.getEmail());
+            if(user != null) {
+                Map<String, Object> props = new HashMap<>();
+                props.put("fullname", user.getFullName());
+                props.put("email", user.getEmail());
 
-            MailRequest mailRequest = MailRequest.builder()
-                    .to(user.getEmail())
-                    .subject(MailUtil.SEND_EMAIL_SUBJECT.CLIENT_REGISTER)
-                    .props(props)
-                    .build();
-            mailService.sendHtmlMail(mailRequest, MailUtil.TEMPLATE_EMAIL_CRETE_USER.TEMPLATE_GMAIL_REGISTER);
-        }catch (MessagingException e) {
-            e.printStackTrace();
-        }
+                MailRequest mailRequest = MailRequest.builder()
+                        .to(user.getEmail())
+                        .subject(MailUtil.SEND_EMAIL_SUBJECT.CLIENT_REGISTER)
+                        .props(props)
+                        .build();
+                Map<String, Object> message = new HashMap<>();
+                message.put("mailRequest", mailRequest);
+                message.put("template", MailUtil.TEMPLATE_EMAIL_CRETE_USER.TEMPLATE_GMAIL_REGISTER);
+                kafkaTemplate.send("confirm-account-topic", message);
+                //mailService.sendHtmlMail(mailRequest, MailUtil.TEMPLATE_EMAIL_CRETE_USER.TEMPLATE_GMAIL_REGISTER);
+            }
         return authResponse;
     }
 
@@ -207,8 +211,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .subject(MailUtil.SEND_EMAIL_SUBJECT.CLIENT_OTP)
                     .props(props)
                     .build();
-            mailService.sendHtmlMail(mailRequest, MailUtil.TEMPLATE_EMAIL_CRETE_USER.TEMPALTE_SEND_VERIFY_CODE);
-        }catch (MessagingException e) {
+            //mailService.sendHtmlMail(mailRequest, MailUtil.TEMPLATE_EMAIL_CRETE_USER.TEMPALTE_SEND_VERIFY_CODE);
+            Map<String, Object> message = new HashMap<>();
+            message.put("mailRequest", mailRequest);
+            message.put("template", MailUtil.TEMPLATE_EMAIL_CRETE_USER.TEMPALTE_SEND_VERIFY_CODE);
+            kafkaTemplate.send("confirm-account-topic", message);
+        }catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -254,8 +262,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
 
-
-
+    
 
 
 }

@@ -30,6 +30,8 @@ import { createChat, getUsersChat } from "../Redux/Chat/Action";
 import { createMessage, getAllMessages } from "../Redux/Message/Action";
 import SockJS from "sockjs-client";
 import { over } from "stompjs";
+import data from '@emoji-mart/data'
+import Picker from '@emoji-mart/react'
 const HomePage = () => {
   const [querys, setQuerys] = useState(null);
   const [currentChat, setCurrentChat] = useState(null);
@@ -44,6 +46,7 @@ const HomePage = () => {
   const [isConnect, setIsConnect] = useState(false);
   const [messages, setMessages] = useState([]);
   const token = localStorage.getItem("token");
+  const [showEmoji, setShowEmoji] = useState(false);
   const handleClickOnChatCard = (user_id) => {
     console.log(user_id);
     dispatch(createChat({ data: { user_id }, token }));
@@ -257,7 +260,16 @@ const HomePage = () => {
   const handleFiles = (event) => {
     
   };
-  
+  const handleShowEmoji = () => {
+    setShowEmoji(!showEmoji);
+  }
+  const addEmoji = (emoji) => {
+    const sym = emoji.unified.split('_')
+    const codeArray = [];
+    sym.forEach(el => codeArray.push('0x' + el));
+    let emojiPic = String.fromCodePoint(...codeArray);
+    setContent(content + emojiPic);
+  };
   return (
     <div className="relative">
       <div className=" w-full py-14 bg-[#00a884]"></div>
@@ -488,16 +500,22 @@ const HomePage = () => {
                     </div>
                   ))}
               </div>
+              <div className="absolute top-[30%] left-0">
+                {showEmoji && <Picker data={data} emojiSize={20} onEmojiSelect={addEmoji} maxFrequentRows={0}/>}
+              </div>
+               
             </div>
             {/* footer part */}
+            
             <div className="footer bg-[#f0f2f5] absolute bottom-0 w-full py-3 text-2xl">
               <div className="flex justify-between items-center px-5 relative">
-                <BsEmojiSmile className="cursor-pointer" />
+                <BsEmojiSmile className="cursor-pointer hover:text-slate-500" onClick={handleShowEmoji}/>
                 <ImAttachment
                   type="file"
                   onClick={(e) => handleAttachment(e)}
                   className="cursor-pointer"
                 />
+                {/* <Picker data={data} /> */}
                 <input
                   type="file"
                   ref={fileInputRef}

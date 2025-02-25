@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,7 +50,8 @@ public class MessageServiceImpl implements MessageService {
             Message finalMessage = message;
             List<Media> medias = sendMessageRequest.getMedias().stream().map(mediaRequest -> {
                 return  mediaService.save(finalMessage, mediaRequest);
-            }).collect(Collectors.toList());
+            }).toList();
+
         }
         message = messageRepository.findById(message.getId()).orElseThrow(() -> new AppException(ErrorCode.MESSAGE_NOT_FOUND));
         return messageMapper.toMessageResponse(message);
@@ -61,7 +63,7 @@ public class MessageServiceImpl implements MessageService {
         Chat chat = chatService.findChatById(chatId);
         if(!chat.getUsers().contains(reqUser)) throw new AppException(ErrorCode.USER_NOT_MEMBER_GROUP);
         List<MessageResponse> messageResponses = messageRepository.findByChatId(chatId)
-                .stream().map(message -> messageMapper.toMessageResponse(message)).collect(Collectors.toList());
+                .stream().map(message -> messageMapper.toMessageResponse(message)).toList();
         return messageResponses;
     }
 
@@ -69,6 +71,7 @@ public class MessageServiceImpl implements MessageService {
     public Message findMessageById(Integer messageId) {
         Message message = messageRepository.findById(messageId).orElseThrow(() -> new AppException(ErrorCode.MESSAGE_NOT_FOUND));
         return message;
+
     }
 
     @Override

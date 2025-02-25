@@ -111,6 +111,12 @@ const Signin = () => {
               signup
             </Button>
           </div>
+          <div className="flex space-x-3 items-center">
+            <p className="m-0 mr-7">Forgot Password</p>
+            <Button variant="text" >
+              Forgot
+            </Button>
+          </div>
         </div>
       </div>
       <Snackbar
